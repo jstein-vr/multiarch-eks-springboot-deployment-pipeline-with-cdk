@@ -10,18 +10,19 @@ from aws_cdk import (core, aws_codebuild as codebuild,
 
 class PipelineStack(core.Stack):
 
-    def __init__(self, scope: core.Construct, id: str, eks, redis, rds_cluster, **kwargs) -> None:
-        
+    #def __init__(self, scope: core.Construct, id: str, eks, redis, rds_cluster, **kwargs) -> None:
+    def __init__(self, scope: core.Construct, id: str, **kwargs) -> None:
+
         super().__init__(scope, id, **kwargs)
-        
-        self.eks = eks
-        self.redis = redis
-        self.rds_cluster = rds_cluster
-        
+
+        #self.eks = eks
+        #self.redis = redis
+        #self.rds_cluster = rds_cluster
+
 
         # create ECR
         ecr_repo = ecr.Repository(self, "ECRRep", repository_name="springboot-multiarch")
-        
+
         # create code repo
         code = codecommit.Repository(self, "CodeRep", repository_name="springboot-multiarch")
         core.CfnOutput(self,"CodeCommitOutput", value=code.repository_clone_url_http)
@@ -34,7 +35,7 @@ class PipelineStack(core.Stack):
                             privileged=True),
                         environment_variables=self.get_build_env_vars(ecr_repo))
         self.add_role_access_to_build(arm_build)
-            
+
         amd_build = codebuild.PipelineProject(self, "AMDBuild",
                         build_spec=codebuild.BuildSpec.from_source_filename("cdk/pipeline/amdbuild.yml"),
                         environment=codebuild.BuildEnvironment(
@@ -42,7 +43,7 @@ class PipelineStack(core.Stack):
                             privileged=True),
                         environment_variables=self.get_build_env_vars(ecr_repo))
         self.add_role_access_to_build(amd_build)
-        
+
         post_build = codebuild.PipelineProject(self, "PostBuild",
                         build_spec=codebuild.BuildSpec.from_source_filename("cdk/pipeline/post_build.yml"),
                         environment=codebuild.BuildEnvironment(
@@ -88,7 +89,7 @@ class PipelineStack(core.Stack):
                             outputs=[post_build_output])
                             ]),
             ])
-    
+
     def add_role_access_to_build(self, build):
         build.role.add_managed_policy(
             iam.ManagedPolicy.from_aws_managed_policy_name("AmazonEC2ContainerRegistryFullAccess"))
@@ -97,25 +98,25 @@ class PipelineStack(core.Stack):
         build.add_to_role_policy(iam.PolicyStatement(
             actions=["kms:Decrypt", "kms:GenerateDataKey*"], resources=["*"]))
         build.add_to_role_policy(iam.PolicyStatement(
-            actions=["eks:DescribeNodegroup", "eks:DescribeFargateProfile", 
+            actions=["eks:DescribeNodegroup", "eks:DescribeFargateProfile",
             "eks:DescribeUpdate", "eks:DescribeCluster"], resources=["*"]))
-        build.add_to_role_policy(iam.PolicyStatement(
-            actions=["sts:AssumeRole"], resources=[self.eks.kubectl_role.role_arn]))
-            
+        #build.add_to_role_policy(iam.PolicyStatement(
+        #    actions=["sts:AssumeRole"], resources=[self.eks.kubectl_role.role_arn]))
+
     def get_build_env_vars(self, ecr_repo):
         return {
                     "REPOSITORY_URI": codebuild.BuildEnvironmentVariable(value=ecr_repo.repository_uri),
-                    "DOCKERHUB_USERNAME": codebuild.BuildEnvironmentVariable(
-                                value="/springboot-multiarch/dockerhub/username", 
-                                type=codebuild.BuildEnvironmentVariableType.PARAMETER_STORE),
-                    "DOCKERHUB_PASSWORD": codebuild.BuildEnvironmentVariable(
-                                value="/springboot-multiarch/dockerhub/password ", 
-                                type=codebuild.BuildEnvironmentVariableType.PARAMETER_STORE),
-                    "REDIS_HOST": codebuild.BuildEnvironmentVariable(value=self.redis.attr_redis_endpoint_address),
-                    "REDIS_PORT": codebuild.BuildEnvironmentVariable(value=self.redis.attr_redis_endpoint_port),
-                    "RDS_SECRET": codebuild.BuildEnvironmentVariable(value=self.rds_cluster.secret.secret_name),
-                    "RDS_HOST": codebuild.BuildEnvironmentVariable(value=self.rds_cluster.cluster_endpoint.hostname),
-                    "RDS_PORT": codebuild.BuildEnvironmentVariable(value=self.rds_cluster.cluster_endpoint.port),
-                    "EKS_NAME": codebuild.BuildEnvironmentVariable(value=self.eks.cluster_name),
-                    "EKS_ROLE": codebuild.BuildEnvironmentVariable(value=self.eks.kubectl_role.role_arn),
+    #                "DOCKERHUB_USERNAME": codebuild.BuildEnvironmentVariable(
+    #                            value="/springboot-multiarch/dockerhub/username",
+    #                            type=codebuild.BuildEnvironmentVariableType.PARAMETER_STORE),
+    #                "DOCKERHUB_PASSWORD": codebuild.BuildEnvironmentVariable(
+    #                            value="/springboot-multiarch/dockerhub/password ",
+    #                            type=codebuild.BuildEnvironmentVariableType.PARAMETER_STORE),
+    #                "REDIS_HOST": codebuild.BuildEnvironmentVariable(value=self.redis.attr_redis_endpoint_address),
+    #                "REDIS_PORT": codebuild.BuildEnvironmentVariable(value=self.redis.attr_redis_endpoint_port),
+    #                "RDS_SECRET": codebuild.BuildEnvironmentVariable(value=self.rds_cluster.secret.secret_name),
+    #                "RDS_HOST": codebuild.BuildEnvironmentVariable(value=self.rds_cluster.cluster_endpoint.hostname),
+    #                "RDS_PORT": codebuild.BuildEnvironmentVariable(value=self.rds_cluster.cluster_endpoint.port),
+    #                "EKS_NAME": codebuild.BuildEnvironmentVariable(value=self.eks.cluster_name),
+    #                "EKS_ROLE": codebuild.BuildEnvironmentVariable(value=self.eks.kubectl_role.role_arn),
                 }

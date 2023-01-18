@@ -6,15 +6,16 @@ import os
 from aws_cdk import core
 
 from pipeline.pipeline_stack import PipelineStack
-from backend.backend_stack import BackendStack
+#from backend.backend_stack import BackendStack
 
-env = core.Environment(account=os.environ["CDK_DEPLOY_ACCOUNT"],
-                       region=os.environ["CDK_DEPLOY_REGION"])
+env = core.Environment(account='899456967600',
+                       region='us-east-2')
 
 app = core.App()
 
-backend = BackendStack(app, "backend", env=env)
-pipeline = PipelineStack(app, "pipeline", eks=backend.eks, redis=backend.redis,
-                        rds_cluster=backend.rds_cluster, env=env)
+#backend = BackendStack(app, "backend", env=env)
+pipeline = PipelineStack(app, "pipeline", env=env)
+#pipeline = PipelineStack(app, "pipeline", eks=backend.eks, redis=backend.redis,
+#                        rds_cluster=backend.rds_cluster, env=env)
 
 app.synth()

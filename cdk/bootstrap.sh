@@ -1,4 +1,5 @@
 #!/bin/bash
+alias pip=pip3
 if [[ $# -ge 2 ]]; then
     source .env/bin/activate
     export CDK_DEPLOY_ACCOUNT=$1
