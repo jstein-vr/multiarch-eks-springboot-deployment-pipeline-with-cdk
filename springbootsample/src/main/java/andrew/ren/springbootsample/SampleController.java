@@ -96,7 +96,7 @@ public class SampleController {
 	        else
 	        	return "failed";
 		}catch(Exception e){
-	        return "failed";
+	        return "failed: " + e.getMessage();
 	    }
 	}
 }
